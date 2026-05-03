@@ -23,8 +23,9 @@
 
 #define HAND_DISTANCE_THRESHOLD 6.0
 #define NO_ROUNDS 2
-#define QUOTE_DISPLAY_TIME 3000; // milliseconds
+#define QUOTE_DISPLAY_TIME 3200; // milliseconds
 int tempo = 144 * 2;
+#define HAND_TIME_BUFFER 5
 
 /// TIME DELTA
 
@@ -35,6 +36,8 @@ void update_delta_t() {
   DELTA_T = millis() - LAST_TIME;
   LAST_TIME = millis();
 }
+
+short hand_time = 0;
 
 /// SCREEN
 
@@ -93,6 +96,14 @@ const char q1[] PROGMEM = "Asking the spirits";
 const char q2[] PROGMEM = "Checking the constellations";
 const char q3[] PROGMEM = "Wondering";
 const char q4[] PROGMEM = "Consulting the Higher Ones";
+const char q5[] PROGMEM = "Pondering the orb";
+const char q6[] PROGMEM = "Running the numbers";
+const char q7[] PROGMEM = "Uhhhh";
+const char q8[] PROGMEM = "Hmmmm";
+const char q9[] PROGMEM = "Interesting";
+const char q10[] PROGMEM = "Making some coffee";
+const char q11[] PROGMEM = "Drawing a magic square";
+const char q12[] PROGMEM = "Reading your palm";
 
 const char f0[] PROGMEM = "Your days will be filled with sunshine!";
 const char f1[] PROGMEM = "A difference must make a difference.";
@@ -101,15 +112,24 @@ const char f3[] PROGMEM = "Luck will visit you on the next new moon!";
 const char f4[] PROGMEM = "Your wisdom will find a way!";
 const char f5[] PROGMEM = "The star of riches is shining upon you!";
 const char f6[] PROGMEM = "Cheese";
-
-const char no_hand_quote[] PROGMEM = "No hand inserted.";
+const char f7[] PROGMEM = "Your ability to find the silly in the serious will take you far.";
+const char f8[] PROGMEM = "You will soon be honored by someone you respect.";
+const char f9[] PROGMEM = "You will cotinue to interpret vague statements as uniquely meaningful.";
+const char f10[] PROGMEM = "Error 404: fortune not found!";
+const char f11[] PROGMEM = "Live, laugh, love or something...";
+const char f12[] PROGMEM = "Before you can see the light, you have to deal with the darkness.";
+const char f13[] PROGMEM = "Never give up, never let down, never turn around and desert someone";
+const char f14[] PROGMEM = "What's that in your eye? Oh... it's a sparkle!";
+const char f15[] PROGMEM = "Don't have more than 2 drinks, or you'll have a hangover tomorrow";
+ 
+const char no_hand_quote[] PROGMEM = "Listen, dearie. Place your hand under the eye and let the spirits reveal the wondrous things your future has in store!";
 
 // Create the tables (arrays of pointers) also in Flash
-const char* const generating_quotes[] PROGMEM = { q0, q1, q2, q3, q4 };
-const char* const fortune_quotes[] PROGMEM = { f0, f1, f2, f3, f4, f5, f6 };
+const char* const generating_quotes[] PROGMEM = { q0, q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12 };
+const char* const fortune_quotes[] PROGMEM = { f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15 };
 
-const unsigned int NO_GEN_QUOTES = 3;
-const unsigned int NO_FORTUNES = 3;
+const unsigned int NO_GEN_QUOTES = 13;
+const unsigned int NO_FORTUNES = 16;
 
 short last_gen_quote = -1;
 short current_gen_quote = -1;
@@ -359,10 +379,16 @@ void loop() {
   oled.clearDisplay();
 
   // 80 bytes is enough for your longest fortune without crashing the Uno
-  char messageBuffer[80]; 
+  char messageBuffer[128]; 
   memset(messageBuffer, 0, sizeof(messageBuffer));
+  
+  if (is_hand_inserted(detected_distance) && hand_time < HAND_TIME_BUFFER) {
+    hand_time++;
+  } else if (hand_time > 0) {
+    hand_time--;
+  }
 
-  if (is_hand_inserted(detected_distance)) {
+  if (hand_time > 0) {
     start_music();
     
     if (quote_timer > 0) {
